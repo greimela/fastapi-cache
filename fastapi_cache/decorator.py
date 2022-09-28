@@ -68,7 +68,14 @@ def cache(
             if (
                 request and request.headers.get("Cache-Control") == "no-store"
             ) or not FastAPICache.get_enable():
-                return await func(*args, **kwargs)
+                if not request_param:
+                    kwargs.pop("request")
+                if not response_param:
+                    kwargs.pop("response")
+                if inspect.iscoroutinefunction(func):
+                    return await func(*args, **kwargs)
+                else:
+                    return await run_in_threadpool(func, *args, **kwargs)
 
             coder = coder or FastAPICache.get_coder()
             expire = expire or FastAPICache.get_expire()
